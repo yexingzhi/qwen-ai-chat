@@ -1,0 +1,177 @@
+# 中文国际化文件 (Simplified Chinese)
+
+commands:
+  chat:
+    description: 与千问大模型对话
+    options:
+      persona: 临时切换人设
+      reset: 重置对话历史
+    messages:
+      no-session: ❌ 无法获取会话信息
+      no-message: ❌ 请输入要对话的内容
+      thinking: 正在思考中...
+      reset-success: ✅ 对话历史已重置
+      invalid-persona: ❌ 人设 "{name}" 不存在
+      api-error: ❌ API 调用失败
+      api-key-invalid: ❌ API Key 无效或已过期，请检查配置
+      rate-limit: ❌ 请求过于频繁，请稍后再试
+      server-error: ❌ 服务器错误，请稍后重试
+      unknown-error: ❌ 发生未知错误，请查看日志
+
+  ask:
+    description: 与千问大模型对话 (chat 的别名)
+    options:
+      persona: 临时切换人设
+      reset: 重置对话历史
+
+  persona-list:
+    description: 查看所有人设
+    messages:
+      available: 🎭 可用人设 / Available Personas (共 {count} 个)
+      no-personas: ❌ 没有可用人设 / No personas available
+      traits: 性格 / Traits
+      aliases: 别名 / Aliases
+
+  persona-switch:
+    description: 切换人设
+    messages:
+      switched: ✅ 已切换到 / Switched to: **{name}** ({id})
+      not-found: ❌ 人设 "{name}" 不存在 / Persona not found
+      empty-name: ❌ 请指定人设名称 / Please specify persona name
+      example: 💡 例如 / Example
+
+  persona-current:
+    description: 查看当前人设
+    messages:
+      current: 🎭 当前人设 / Current Persona
+      traits: 🤖 性格特征 / Traits
+      rounds: 💬 对话轮数 / Rounds
+      messages: 📊 消息数 / Messages
+      tokens: 🔥 总 Token / Total Tokens
+      created: ⏰ 创建时间 / Created
+
+  persona-info:
+    description: 查看人设详情
+    messages:
+      details: 📝 人设详情 / Persona Details
+      system-prompt: 🤖 系统提示 / System Prompt
+      config: ⚙️ 配置参数 / Parameters
+      temperature: 创意度 / Temperature
+      max-tokens: 最大输出 / Max Tokens
+      greeting: 👋 问候语 / Greeting
+      avatar: 🖼️ 头像 / Avatar
+      not-found: ❌ 人设 "{name}" 不存在 / Persona not found
+
+  persona-create:
+    description: 创建自定义人设
+    options:
+      prompt: 系统提示词 / System prompt
+      temperature: 创意度 / Temperature (0-2)
+      maxTokens: 最大输出长度 / Max tokens
+      greeting: 问候语 / Greeting
+      traits: 性格特征 / Traits（用逗号分隔 / comma-separated）
+    messages:
+      created: ✅ 已创建自定义人设 / Created
+      already-exists: ❌ 人设 "{name}" 已存在 / Persona already exists
+      invalid-params: ❌ 请指定人设名称和描述 / Please specify persona name and description
+
+  persona-remove:
+    description: 删除自定义人设
+    messages:
+      removed: ✅ 已删除自定义人设 / Removed
+      cannot-remove: ❌ 无法删除人设 "{name}" / Cannot remove persona
+      empty-name: ❌ 请指定要删除的人设名称 / Please specify persona name to remove
+
+  persona-custom:
+    description: 查看自定义人设
+    messages:
+      custom: 🎭 自定义人设 / Custom Personas (共 {count} 个)
+      no-custom: ❌ 没有自定义人设 / No custom personas
+      hint: 💡 使用 / Use `persona create` 或 `创建人设` 创建新人设
+
+  context-clear:
+    description: 清除对话历史
+    messages:
+      cleared: ✅ 对话历史已清除 / Conversation history cleared
+
+  context-info:
+    description: 查看上下文信息
+    messages:
+      info: 📊 上下文信息 / Context Information
+      persona: 🎭 当前人设 / Current Persona
+      rounds: 💬 对话轮数 / Rounds
+      messages: 📝 消息数 / Messages
+      tokens: 🔥 总 Token / Total Tokens
+      created: ⏰ 创建时间 / Created
+      updated: 🔄 最后更新 / Last Updated
+
+  context-stats:
+    description: 查看对话统计
+    messages:
+      stats: 📈 对话统计 / Conversation Statistics
+      total-rounds: 💬 总对话轮数 / Total Rounds
+      total-messages: 📝 总消息数 / Total Messages
+      total-tokens: 🔥 总 Token 数 / Total Tokens
+      avg-tokens: 📊 平均 Token/消息 / Avg Tokens/Message
+      duration: ⏱️ 对话时长 / Duration
+      seconds: 秒 / seconds
+
+  image:
+    description: 生成图像
+    options:
+      size: 图像尺寸 / Image size
+      style: 图像风格 / Image style
+    messages:
+      disabled: ❌ 文生图功能未启用 / Text-to-image feature not enabled
+      no-prompt: ❌ 请提供图像描述 / Please provide image description
+      generating: 正在生成图像...
+      success: ✅ 图像生成成功
+      failed: ❌ 生成图像失败 / Failed to generate image
+
+  edit-image:
+    description: 编辑图片
+    messages:
+      disabled: ❌ 图片编辑功能未启用 / Image editing feature not enabled
+      no-params: ❌ 请提供图片和编辑描述 / Please provide image and edit description
+      editing: 正在编辑图片...
+      success: ✅ 图片编辑成功
+      failed: ❌ 编辑图片失败 / Failed to edit image
+
+  video:
+    description: 生成视频
+    messages:
+      disabled: ❌ 文生视频功能未启用 / Text-to-video feature not enabled
+      no-prompt: ❌ 请提供视频描述 / Please provide video description
+      generating: 正在生成视频...
+      success: ✅ 视频生成成功
+      failed: ❌ 生成视频失败 / Failed to generate video
+
+  translate:
+    description: 翻译文本
+    options:
+      source: 源语言 / Source language
+    messages:
+      disabled: ❌ 翻译功能未启用 / Translation feature not enabled
+      no-text: ❌ 请提供要翻译的文本 / Please provide text to translate
+      translating: 正在翻译...
+      success: ✅ 翻译成功
+      failed: ❌ 翻译失败 / Translation failed
+
+errors:
+  no-session: ❌ 无法获取会话信息 / Failed to get session info
+  feature-disabled: ❌ 功能已禁用 / Feature not enabled
+  permission-denied: ❌ 权限不足 / Permission denied
+  invalid-param: ❌ 参数无效 / Invalid parameter
+  api-error: ❌ API 调用失败 / API call failed
+  unknown-error: ❌ 发生未知错误 / Unknown error occurred
+
+logs:
+  plugin-start: Qwen 插件启动
+  plugin-stop: Qwen 插件已卸载
+  service-init: 初始化服务
+  service-init-failed: 服务初始化失败
+  command-register: 注册命令
+  command-disabled: 功能已禁用，跳过注册命令
+  command-called: 命令被调用
+  user-action: 用户操作
+  error-occurred: 发生错误

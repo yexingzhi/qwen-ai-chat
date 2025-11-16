@@ -3,13 +3,23 @@
  * 负责管理对话上下文、消息历史和 token 计数
  */
 
+import { Logger } from 'koishi'
 import { ChatMessage, ConversationContext, EnhancedConfig } from '../types'
 
 export class ConversationManager {
   /** 对话上下文存储 (sessionId -> context) */
   private conversations: Map<string, ConversationContext> = new Map()
 
-  constructor(private config: EnhancedConfig) {}
+  constructor(private config: EnhancedConfig, private logger?: Logger) {}
+
+  /**
+   * 日志辅助方法
+   */
+  private log(message: string, level: 'info' | 'warn' | 'error' = 'info'): void {
+    if (this.logger) {
+      this.logger[level](`[ConversationManager] ${message}`)
+    }
+  }
 
   /**
    * 获取或创建对话上下文

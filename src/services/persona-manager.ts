@@ -3,6 +3,7 @@
  * 负责管理内置人设、自定义人设和用户人设状态
  */
 
+import { Logger } from 'koishi'
 import { PersonaConfig, EnhancedConfig } from '../types'
 import { getSimplePersonas } from './personas-simple'
 import { getComplexPersonas } from './personas-complex'
@@ -19,9 +20,26 @@ export class PersonaManager {
   /** 人设别名映射 (中文名/别名 -> 英文名) */
   private personaAliases: Map<string, string> = new Map()
 
-  constructor(private config: EnhancedConfig, personaVersion: 'simple' | 'complex' = 'simple') {
+  constructor(
+    private config: EnhancedConfig,
+    personaVersion: 'simple' | 'complex' = 'simple',
+    private logger?: Logger
+  ) {
+    // 验证人设版本
+    if (!['simple', 'complex'].includes(personaVersion)) {
+      throw new Error('personaVersion 必须是 simple 或 complex')
+    }
     this.personaVersion = personaVersion
     this.initializeDefaultPersonas()
+  }
+
+  /**
+   * 日志辅助方法
+   */
+  private log(message: string, level: 'info' | 'warn' | 'error' = 'info'): void {
+    if (this.logger) {
+      this.logger[level](`[PersonaManager] ${message}`)
+    }
   }
 
   /**

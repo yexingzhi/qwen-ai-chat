@@ -9,12 +9,27 @@ import {
   TextToVideoService,
   TranslateService,
   PersonaManager,
-  ConversationManager
+  ConversationManager,
+  createServices,
+  QwenAIServices
 } from './services'
 import { registerPersonaCommands, registerContextCommands } from './commands'
 import { EnhancedConfig } from './types'
 
 export const name = 'qwen-ai-chat'
+
+// 声明可选依赖
+export const using = [] as const
+
+// 声明提供的服务
+declare module 'koishi' {
+  interface Context {
+    qwenAIChat?: {
+      personaManager: PersonaManager
+      conversationManager: ConversationManager
+    }
+  }
+}
 
 export interface Config {
   apiKey: string
@@ -30,44 +45,59 @@ export interface Config {
   personaVersion: 'simple' | 'complex'
 }
 
-export const Config: Schema<Config> = Schema.object({
-  apiKey: Schema.string()
-    .required()
-    .description('阿里云百炼 API Key'),
-  model: Schema.string()
-    .default('qwen-plus')
-    .description('默认使用的模型名称'),
-  baseURL: Schema.string()
-    .default('https://dashscope.aliyuncs.com/compatible-mode/v1')
-    .description('API 基础 URL'),
-  region: Schema.string()
-    .default('beijing')
-    .description('API 地域 (beijing 或 singapore)'),
-  temperature: Schema.number()
-    .default(0.7)
-    .min(0)
-    .max(2)
-    .description('创意度 (0-2)'),
-  maxTokens: Schema.number()
-    .default(2000)
-    .min(1)
-    .description('最大输出 token 数'),
-  enableTextToImage: Schema.boolean()
-    .default(true)
-    .description('启用文生图功能'),
-  enableImageEdit: Schema.boolean()
-    .default(true)
-    .description('启用图片编辑功能'),
-  enableTextToVideo: Schema.boolean()
-    .default(true)
-    .description('启用文生视频功能'),
-  enableTranslate: Schema.boolean()
-    .default(true)
-    .description('启用翻译功能'),
-  personaVersion: Schema.union(['simple', 'complex'])
-    .default('simple')
-    .description('人设版本：simple(简易) 或 complex(详细)'),
-})
+export const Config: Schema<Config> = Schema.intersect([
+  Schema.object({
+    apiKey: Schema.string()
+      .required()
+      .role('secret')
+      .description('阿里云百炼 API Key / Alibaba Cloud Bailian API Key'),
+    model: Schema.union([
+      'qwen-turbo',
+      'qwen-plus',
+      'qwen-max',
+      'qwen-long'
+    ] as const)
+      .default('qwen-plus')
+      .description('默认使用的模型 / Default model'),
+    baseURL: Schema.string()
+      .default('https://dashscope.aliyuncs.com/compatible-mode/v1')
+      .description('API 基础 URL / API base URL'),
+    region: Schema.union(['beijing', 'singapore'] as const)
+      .default('beijing')
+      .description('API 地域 / API region'),
+  }).description('API 配置 / API Configuration'),
+
+  Schema.object({
+    temperature: Schema.number()
+      .default(0.7)
+      .min(0)
+      .max(2)
+      .description('创意度 (0-2) / Creativity (0-2)'),
+    maxTokens: Schema.number()
+      .default(2000)
+      .min(1)
+      .max(8000)
+      .description('最大输出 token 数 / Max output tokens'),
+    personaVersion: Schema.union(['simple', 'complex'] as const)
+      .default('simple')
+      .description('人设版本 / Persona version: simple(简易) 或 complex(详细)'),
+  }).description('模型参数 / Model Parameters'),
+
+  Schema.object({
+    enableTextToImage: Schema.boolean()
+      .default(true)
+      .description('启用文生图功能 / Enable text-to-image'),
+    enableImageEdit: Schema.boolean()
+      .default(true)
+      .description('启用图片编辑功能 / Enable image editing'),
+    enableTextToVideo: Schema.boolean()
+      .default(true)
+      .description('启用文生视频功能 / Enable text-to-video'),
+    enableTranslate: Schema.boolean()
+      .default(true)
+      .description('启用翻译功能 / Enable translation'),
+  }).description('功能开关 / Feature Switches'),
+])
 
 export function apply(ctx: Context, config: Config) {
   logger.info('[插件] Qwen 插件启动')
@@ -114,18 +144,7 @@ export function apply(ctx: Context, config: Config) {
 
   let openai = createOpenAIClient(modelManager.getCurrentModel()!)
 
-  // 初始化服务
-  logger.info('[插件] 初始化服务...')
-  let textToImageService = new TextToImageService(config.apiKey, config.region)
-  logger.info('[插件] 文生图服务已初始化 (地域: ' + config.region + ')')
-  let imageEditService = new ImageEditService(config.apiKey, config.region)
-  logger.info('[插件] 图片编辑服务已初始化 (地域: ' + config.region + ')')
-  let textToVideoService = new TextToVideoService(config.apiKey, config.region)
-  logger.info('[插件] 文生视频服务已初始化 (地域: ' + config.region + ')')
-  let translateService = new TranslateService(config.apiKey, config.region)
-  logger.info('[插件] 翻译服务已初始化 (地域: ' + config.region + ')')
-
-  // 初始化人设和对话管理器
+  // 初始化增强配置
   const enhancedConfig: EnhancedConfig = {
     enablePersonas: true,
     enableContext: true,
@@ -139,14 +158,40 @@ export function apply(ctx: Context, config: Config) {
     cleanupInterval: 60 * 60 * 1000
   }
 
-  const personaManager = new PersonaManager(enhancedConfig, config.personaVersion)
-  const conversationManager = new ConversationManager(enhancedConfig)
-  logger.info(`[插件] 人设和对话管理器已初始化 (人设版本: ${config.personaVersion})`)
+  // 使用服务工厂创建所有服务
+  logger.info('[插件] 初始化服务...')
+  let services: QwenAIServices
+  try {
+    services = createServices(
+      config.apiKey,
+      config.region,
+      config.personaVersion,
+      enhancedConfig,
+      ctx.logger('qwen-ai-chat')
+    )
+    logger.info('[插件] 所有服务已初始化')
+  } catch (error) {
+    logger.error('[插件] 服务初始化失败:', error)
+    return
+  }
+
+  // 解构服务（使用 let 允许后续更新）
+  let {
+    personaManager,
+    conversationManager,
+    textToImageService,
+    imageEditService,
+    textToVideoService,
+    translateService
+  } = services
+
+  // 注册服务到 Context
+  ctx.qwenAIChat = services
 
   // 注册 chat 命令
-  ctx.command('chat <message:text>', '与千问大模型对话')
-    .option('persona', '-p <persona:string> 临时切换人设')
-    .option('reset', '-r 重置对话历史')
+  ctx.command('chat <message:text>', ctx.i18n.get('commands.chat.description'))
+    .option('persona', `-p <persona:string> ${ctx.i18n.get('commands.chat.options.persona')}`)
+    .option('reset', `-r ${ctx.i18n.get('commands.chat.options.reset')}`)
     .action(async ({ session, options }, message) => {
       if (!session) {
         return '❌ 无法获取会话信息'
@@ -236,9 +281,9 @@ export function apply(ctx: Context, config: Config) {
     })
 
   // 注册 ask 命令（别名）
-  ctx.command('ask <message:text>', '与千问大模型对话 (chat 的别名)')
-    .option('persona', '-p <persona:string> 临时切换人设')
-    .option('reset', '-r 重置对话历史')
+  ctx.command('ask <message:text>', ctx.i18n.get('commands.ask.description'))
+    .option('persona', `-p <persona:string> ${ctx.i18n.get('commands.ask.options.persona')}`)
+    .option('reset', `-r ${ctx.i18n.get('commands.ask.options.reset')}`)
     .action(async ({ session, options }, message) => {
       if (!session) {
         return '❌ 无法获取会话信息'
@@ -354,11 +399,18 @@ export function apply(ctx: Context, config: Config) {
       if (modelManager.setCurrentModel(name)) {
         const model = modelManager.getCurrentModel()
         openai = createOpenAIClient(model!)
-        // 更新所有服务
-        textToImageService = new TextToImageService(config.apiKey, config.region)
-        imageEditService = new ImageEditService(config.apiKey, config.region)
-        textToVideoService = new TextToVideoService(config.apiKey, config.region)
-        translateService = new TranslateService(config.apiKey, config.region)
+        // 使用服务工厂重新创建服务
+        const updatedServices = createServices(
+          config.apiKey,
+          config.region,
+          config.personaVersion,
+          enhancedConfig,
+          ctx.logger('qwen-ai-chat')
+        )
+        textToImageService = updatedServices.textToImageService
+        imageEditService = updatedServices.imageEditService
+        textToVideoService = updatedServices.textToVideoService
+        translateService = updatedServices.translateService
         return `✅ 已切换到模型: ${formatModelInfo(name, model?.description)}`
       } else {
         return `❌ 模型 "${name}" 不存在`
@@ -380,11 +432,18 @@ export function apply(ctx: Context, config: Config) {
       const normalizedRegion = region.toLowerCase() === 'intl' ? 'singapore' : region.toLowerCase()
       config.region = normalizedRegion
 
-      // 重新初始化所有服务
-      textToImageService = new TextToImageService(config.apiKey, config.region)
-      imageEditService = new ImageEditService(config.apiKey, config.region)
-      textToVideoService = new TextToVideoService(config.apiKey, config.region)
-      translateService = new TranslateService(config.apiKey, config.region)
+      // 使用服务工厂重新初始化所有服务
+      const updatedServices = createServices(
+        config.apiKey,
+        config.region,
+        config.personaVersion,
+        enhancedConfig,
+        ctx.logger('qwen-ai-chat')
+      )
+      textToImageService = updatedServices.textToImageService
+      imageEditService = updatedServices.imageEditService
+      textToVideoService = updatedServices.textToVideoService
+      translateService = updatedServices.translateService
 
       // 更新 OpenAI 客户端的 baseURL
       const model = modelManager.getCurrentModel()

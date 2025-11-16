@@ -2,6 +2,7 @@
  * 图片编辑服务模块
  */
 
+import { Logger } from 'koishi'
 import axios from 'axios'
 import { ImageEditParams, ApiResponse } from '../types'
 import { logger, formatError, isUrl } from '../utils'
@@ -24,7 +25,14 @@ export class ImageEditService {
   private apiKey: string
   private baseUrl: string
 
-  constructor(apiKey: string, region: string = 'beijing') {
+  constructor(apiKey: string, region: string = 'beijing', private koishiLogger?: Logger) {
+    if (!apiKey) {
+      throw new Error('ImageEditService: apiKey 不能为空')
+    }
+    if (!['beijing', 'singapore'].includes(region)) {
+      throw new Error(`ImageEditService: 不支持的地域 ${region}`)
+    }
+
     this.apiKey = apiKey
     if (region === 'singapore' || region === 'intl') {
       this.baseUrl = 'https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation'

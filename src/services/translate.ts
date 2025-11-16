@@ -2,6 +2,7 @@
  * 翻译服务模块
  */
 
+import { Logger } from 'koishi'
 import axios from 'axios'
 import OpenAI from 'openai'
 import { TranslateParams, ApiResponse } from '../types'
@@ -44,7 +45,14 @@ export class TranslateService {
   private apiKey: string
   private baseUrl: string
 
-  constructor(apiKey: string, region: string = 'beijing') {
+  constructor(apiKey: string, region: string = 'beijing', private koishiLogger?: Logger) {
+    if (!apiKey) {
+      throw new Error('TranslateService: apiKey 不能为空')
+    }
+    if (!['beijing', 'singapore'].includes(region)) {
+      throw new Error(`TranslateService: 不支持的地域 ${region}`)
+    }
+
     this.apiKey = apiKey
     if (region === 'singapore' || region === 'intl') {
       this.baseUrl = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions'

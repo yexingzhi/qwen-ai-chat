@@ -2,6 +2,7 @@
  * 文生视频服务模块
  */
 
+import { Logger } from 'koishi'
 import axios from 'axios'
 import { TextToVideoParams, ApiResponse } from '../types'
 import { logger, formatError } from '../utils'
@@ -47,7 +48,14 @@ export class TextToVideoService {
   private baseUrl: string
   private queryUrl: string
 
-  constructor(apiKey: string, region: string = 'beijing') {
+  constructor(apiKey: string, region: string = 'beijing', private koishiLogger?: Logger) {
+    if (!apiKey) {
+      throw new Error('TextToVideoService: apiKey 不能为空')
+    }
+    if (!['beijing', 'singapore'].includes(region)) {
+      throw new Error(`TextToVideoService: 不支持的地域 ${region}`)
+    }
+
     this.apiKey = apiKey
     
     // 根据地域选择 API 端点

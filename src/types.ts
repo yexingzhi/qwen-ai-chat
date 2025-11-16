@@ -202,3 +202,58 @@ export interface ImageEditParams {
   /** 掩码 URL（可选，用于指定编辑区域） */
   maskUrl?: string
 }
+
+/**
+ * 对话记录接口
+ */
+export interface ConversationRecord {
+  id?: number
+  sessionId: string
+  userId: string
+  persona: string
+  messages: string // JSON 字符串
+  totalTokens: number
+  messageCount: number
+  createdAt: number
+  updatedAt: number
+}
+
+/**
+ * Koishi 数据库表声明
+ */
+declare module 'koishi' {
+  interface Tables {
+    'qwen_conversation_history': {
+      id: number
+      sessionId: string
+      userId: string
+      persona: string
+      messages: string
+      totalTokens: number
+      messageCount: number
+      createdAt: number
+      updatedAt: number
+    }
+    'qwen_user_preferences': {
+      id: number
+      userId: string
+      currentPersona: string
+      favoritePersonas: string
+      createdAt: number
+      updatedAt: number
+    }
+    'qwen_custom_personas': {
+      id: number
+      userId: string
+      name: string
+      description: string
+      systemPrompt: string
+      temperature: number
+      maxTokens: number
+      greeting: string
+      personalityTraits: string
+      createdAt: number
+      updatedAt: number
+    }
+  }
+}

@@ -1,0 +1,177 @@
+# English Localization File
+
+commands:
+  chat:
+    description: Chat with Qwen AI model
+    options:
+      persona: Temporarily switch persona
+      reset: Reset conversation history
+    messages:
+      no-session: ❌ Failed to get session info
+      no-message: ❌ Please enter message content
+      thinking: Thinking...
+      reset-success: ✅ Conversation history has been reset
+      invalid-persona: ❌ Persona "{name}" not found
+      api-error: ❌ API call failed
+      api-key-invalid: ❌ API Key is invalid or expired, please check configuration
+      rate-limit: ❌ Request too frequent, please try again later
+      server-error: ❌ Server error, please try again later
+      unknown-error: ❌ Unknown error occurred, please check logs
+
+  ask:
+    description: Chat with Qwen AI model (alias for chat)
+    options:
+      persona: Temporarily switch persona
+      reset: Reset conversation history
+
+  persona-list:
+    description: View all personas
+    messages:
+      available: 🎭 Available Personas (Total {count})
+      no-personas: ❌ No personas available
+      traits: Traits
+      aliases: Aliases
+
+  persona-switch:
+    description: Switch persona
+    messages:
+      switched: ✅ Switched to **{name}** ({id})
+      not-found: ❌ Persona "{name}" not found
+      empty-name: ❌ Please specify persona name
+      example: 💡 Example
+
+  persona-current:
+    description: View current persona
+    messages:
+      current: 🎭 Current Persona
+      traits: 🤖 Traits
+      rounds: 💬 Conversation Rounds
+      messages: 📊 Messages
+      tokens: 🔥 Total Tokens
+      created: ⏰ Created
+
+  persona-info:
+    description: View persona details
+    messages:
+      details: 📝 Persona Details
+      system-prompt: 🤖 System Prompt
+      config: ⚙️ Configuration
+      temperature: Temperature
+      max-tokens: Max Tokens
+      greeting: 👋 Greeting
+      avatar: 🖼️ Avatar
+      not-found: ❌ Persona "{name}" not found
+
+  persona-create:
+    description: Create custom persona
+    options:
+      prompt: System prompt
+      temperature: Temperature (0-2)
+      maxTokens: Max output tokens
+      greeting: Greeting message
+      traits: Personality traits (comma-separated)
+    messages:
+      created: ✅ Custom persona created
+      already-exists: ❌ Persona "{name}" already exists
+      invalid-params: ❌ Please specify persona name and description
+
+  persona-remove:
+    description: Remove custom persona
+    messages:
+      removed: ✅ Custom persona removed
+      cannot-remove: ❌ Cannot remove persona "{name}"
+      empty-name: ❌ Please specify persona name to remove
+
+  persona-custom:
+    description: View custom personas
+    messages:
+      custom: 🎭 Custom Personas (Total {count})
+      no-custom: ❌ No custom personas
+      hint: 💡 Use `persona create` to create new persona
+
+  context-clear:
+    description: Clear conversation history
+    messages:
+      cleared: ✅ Conversation history cleared
+
+  context-info:
+    description: View context information
+    messages:
+      info: 📊 Context Information
+      persona: 🎭 Current Persona
+      rounds: 💬 Conversation Rounds
+      messages: 📝 Messages
+      tokens: 🔥 Total Tokens
+      created: ⏰ Created
+      updated: 🔄 Last Updated
+
+  context-stats:
+    description: View conversation statistics
+    messages:
+      stats: 📈 Conversation Statistics
+      total-rounds: 💬 Total Rounds
+      total-messages: 📝 Total Messages
+      total-tokens: 🔥 Total Tokens
+      avg-tokens: 📊 Avg Tokens/Message
+      duration: ⏱️ Duration
+      seconds: seconds
+
+  image:
+    description: Generate image
+    options:
+      size: Image size
+      style: Image style
+    messages:
+      disabled: ❌ Text-to-image feature not enabled
+      no-prompt: ❌ Please provide image description
+      generating: Generating image...
+      success: ✅ Image generated successfully
+      failed: ❌ Failed to generate image
+
+  edit-image:
+    description: Edit image
+    messages:
+      disabled: ❌ Image editing feature not enabled
+      no-params: ❌ Please provide image and edit description
+      editing: Editing image...
+      success: ✅ Image edited successfully
+      failed: ❌ Failed to edit image
+
+  video:
+    description: Generate video
+    messages:
+      disabled: ❌ Text-to-video feature not enabled
+      no-prompt: ❌ Please provide video description
+      generating: Generating video...
+      success: ✅ Video generated successfully
+      failed: ❌ Failed to generate video
+
+  translate:
+    description: Translate text
+    options:
+      source: Source language
+    messages:
+      disabled: ❌ Translation feature not enabled
+      no-text: ❌ Please provide text to translate
+      translating: Translating...
+      success: ✅ Translation successful
+      failed: ❌ Translation failed
+
+errors:
+  no-session: ❌ Failed to get session info
+  feature-disabled: ❌ Feature not enabled
+  permission-denied: ❌ Permission denied
+  invalid-param: ❌ Invalid parameter
+  api-error: ❌ API call failed
+  unknown-error: ❌ Unknown error occurred
+
+logs:
+  plugin-start: Qwen plugin started
+  plugin-stop: Qwen plugin unloaded
+  service-init: Initializing services
+  service-init-failed: Service initialization failed
+  command-register: Registering commands
+  command-disabled: Feature disabled, skipping command registration
+  command-called: Command called
+  user-action: User action
+  error-occurred: Error occurred

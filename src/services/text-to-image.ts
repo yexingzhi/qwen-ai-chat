@@ -2,6 +2,7 @@
  * 文生图服务模块
  */
 
+import { Logger } from 'koishi'
 import OpenAI from 'openai'
 import { ApiResponse, TextToImageParams } from '../types'
 import { formatError, logger } from '../utils'
@@ -29,12 +30,29 @@ export class TextToImageService {
   private apiKey: string
   private baseUrl: string
 
-  constructor(apiKey: string, region: string = 'beijing') {
+  constructor(apiKey: string, region: string = 'beijing', private koishiLogger?: Logger) {
+    // 验证配置
+    if (!apiKey) {
+      throw new Error('TextToImageService: apiKey 不能为空')
+    }
+    if (!['beijing', 'singapore'].includes(region)) {
+      throw new Error(`TextToImageService: 不支持的地域 ${region}`)
+    }
+
     this.apiKey = apiKey
     if (region === 'singapore' || region === 'intl') {
       this.baseUrl = 'https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation'
     } else {
       this.baseUrl = 'https://dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation'
+    }
+  }
+
+  /**
+   * 日志辅助方法
+   */
+  private log(message: string, level: 'info' | 'warn' | 'error' = 'info'): void {
+    if (this.koishiLogger) {
+      this.koishiLogger[level](`[TextToImageService] ${message}`)
     }
   }
 
