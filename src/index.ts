@@ -14,7 +14,7 @@ import {
 import { registerPersonaCommands, registerContextCommands } from './commands'
 import { EnhancedConfig } from './types'
 
-export const name = 'qwen'
+export const name = 'qwen-ai-chat'
 
 export interface Config {
   apiKey: string
