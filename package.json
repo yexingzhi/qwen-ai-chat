@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-qwen-ai-chat",
   "description": "Qwen AI Chat Plugin - 阿里云千问大模型对话插件，支持人设系统、对话上下文管理和多种AI功能",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "laojiu",
   "homepage": "https://github.com/yexingzhi/koishi-plugin-qwen-ai-chat",
   "repository": {
