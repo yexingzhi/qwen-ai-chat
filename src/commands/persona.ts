@@ -1,0 +1,217 @@
+/**
+ * 人设管理命令
+ */
+
+import { Context } from 'koishi'
+import { PersonaManager } from '../services/persona-manager'
+import { ConversationManager } from '../services/conversation-manager'
+import { EnhancedConfig } from '../types'
+
+type Config = EnhancedConfig
+
+// 创建日志记录器
+const logger = {
+  info: (msg: string) => console.log(`[人设命令] ${msg}`),
+  error: (msg: string) => console.error(`[人设命令] ${msg}`),
+  debug: (msg: string) => console.log(`[人设命令-DEBUG] ${msg}`)
+}
+
+export function registerPersonaCommands(
+  ctx: Context,
+  personaManager: PersonaManager,
+  conversationManager: ConversationManager,
+  config: Config
+): void {
+  // 人设列表命令
+  ctx.command('persona-list / 人设列表', '查看所有人设 / View all personas')
+    .action(({ session }) => {
+      if (!session?.userId) return '❌ 无法获取会话信息 / Failed to get session info'
+      if (!config.enablePersonas) {
+        return '❌ 人设功能未启用 / Persona feature not enabled'
+      }
+
+      const personas = personaManager.getAllPersonas()
+      if (personas.length === 0) {
+        return '❌ 没有可用人设 / No personas available'
+      }
+
+      const list = personas
+        .map(p => {
+          const aliases = personaManager.getPersonaAliases(p.name)
+          const aliasText = aliases.length > 1 ? `\n  别名 / Aliases: ${aliases.slice(1).join(', ')}` : ''
+          return `• **${p.name}** - ${p.description}\n  性格 / Traits: ${p.personalityTraits.join('、')}${aliasText}`
+        })
+        .join('\n\n')
+
+      return `🎭 可用人设 / Available Personas (共 ${personas.length} 个 / Total ${personas.length}):\n\n${list}`
+    })
+
+  // 切换人设命令
+  ctx.command('persona-switch / 切换人设 <name:string>', '切换人设 / Switch persona')
+    .action(({ session }, name) => {
+      if (!session?.userId) {
+        return '❌ 无法获取会话信息 / Failed to get session info'
+      }
+      
+      if (!config.enablePersonas) {
+        return '❌ 人设功能未启用 / Persona feature not enabled'
+      }
+
+      // 确保 name 不为空
+      const personaName = String(name).trim()
+      
+      if (!personaName) {
+        return '❌ 请指定人设名称 / Please specify persona name\n💡 例如 / Example: persona-switch catgirl'
+      }
+
+      // 直接尝试切换，switchPersona 会检查人设是否存在
+      if (personaManager.switchPersona(session.userId, personaName)) {
+        const persona = personaManager.getCurrentPersona(session.userId)
+        // 清除历史以适应新人设
+        conversationManager.clearHistory(session.userId)
+        const aliases = personaManager.getPersonaAliases(persona.name)
+        const aliasInfo = aliases.length > 1 ? `\n💡 别名 / Aliases: ${aliases.join(', ')}` : ''
+        return `✅ 已切换到 / Switched to: **${persona.description}** (${persona.name})${aliasInfo}\n\n${persona.greeting}`
+      } else {
+        return `❌ 人设 "${personaName}" 不存在 / Persona not found\n\n💡 使用 / Use \`persona-list\` 或 \`人设列表\` 查看所有可用人设及其别名`
+      }
+    })
+
+  // 当前人设命令
+  ctx.command('persona-current / 当前人设', '查看当前人设 / View current persona')
+    .action(({ session }) => {
+      if (!session?.userId) return '❌ 无法获取会话信息 / Failed to get session info'
+      if (!config.enablePersonas) {
+        return '❌ 人设功能未启用 / Persona feature not enabled'
+      }
+
+      const persona = personaManager.getCurrentPersona(session.userId)
+      const stats = conversationManager.getConversationStats(session.userId)
+
+      return `🎭 当前人设 / Current Persona: **${persona.description}** (${persona.name})
+🤖 性格特征 / Traits: ${persona.personalityTraits.join('、')}
+💬 对话轮数 / Rounds: ${stats.rounds}
+📊 消息数 / Messages: ${stats.messageCount}
+🔥 总 Token / Total Tokens: ${stats.totalTokens}
+⏰ 创建时间 / Created: ${stats.createdAt.toLocaleString()}`
+    })
+
+  // 人设详情命令
+  ctx.command('persona-info / 人设详情 <name:string>', '查看人设详情 / View persona details')
+    .action(({ session }, name) => {
+      if (!session?.userId) return '❌ 无法获取会话信息 / Failed to get session info'
+      if (!config.enablePersonas) {
+        return '❌ 人设功能未启用 / Persona feature not enabled'
+      }
+
+      const personaName = String(name).trim()
+      if (!personaName) {
+        return '❌ 请指定人设名称 / Please specify persona name'
+      }
+
+      const persona = personaManager.getPersona(personaName)
+      if (!persona) {
+        return `❌ 人设 "${personaName}" 不存在 / Persona not found`
+      }
+
+      const aliases = personaManager.getPersonaAliases(persona.name)
+      const aliasInfo = aliases.length > 1 ? `\n🔤 别名 / Aliases: ${aliases.join(', ')}` : ''
+
+      return `📝 人设详情 / Persona Details: **${persona.description}** (${persona.name})${aliasInfo}
+
+🤖 系统提示 / System Prompt:
+\`\`\`
+${persona.systemPrompt}
+\`\`\`
+
+⚙️ 配置参数 / Parameters:
+• 创意度 / Temperature: ${persona.temperature}
+• 最大输出 / Max Tokens: ${persona.maxTokens} tokens
+• 性格特征 / Traits: ${persona.personalityTraits.join('、')}
+
+👋 问候语 / Greeting:
+> ${persona.greeting}${persona.avatar ? `\n\n🖼️ 头像 / Avatar: ${persona.avatar}` : ''}`
+    })
+
+  // 自定义人设功能（如果启用）
+  if (config.enableCustomPersonas) {
+    // 创建自定义人设命令
+    ctx.command('persona create / 创建人设 <name:string> <description:string>', '创建自定义人设 / Create custom persona')
+      .option('prompt', '-p <prompt:text> 系统提示词 / System prompt')
+      .option('temperature', '-t <temperature:number> 创意度 / Temperature (0-2)', { fallback: 0.7 })
+      .option('maxTokens', '-m <maxTokens:number> 最大输出长度 / Max tokens', { fallback: 1000 })
+      .option('greeting', '-g <greeting:string> 问候语 / Greeting')
+      .option('traits', '-tr <traits:string> 性格特征 / Traits（用逗号分隔 / comma-separated）')
+      .action(({ session, options }, name: string, description: string) => {
+        if (!session?.userId) return '❌ 无法获取会话信息 / Failed to get session info'
+        if (!config.enablePersonas) {
+          return '❌ 人设功能未启用 / Persona feature not enabled'
+        }
+
+        if (!name || !description) {
+          return '❌ 请指定人设名称和描述 / Please specify persona name and description'
+        }
+
+        // 验证参数
+        const temperature = Math.max(0, Math.min(2, (options?.temperature as number) || 0.7))
+        const maxTokens = Math.max(100, Math.min(4000, (options?.maxTokens as number) || 1000))
+
+        const persona = {
+          name,
+          description,
+          systemPrompt: (options?.prompt as string) || `你是一个${description}，请根据这个角色进行对话。`,
+          temperature,
+          maxTokens,
+          greeting: (options?.greeting as string) || `你好，我是${description}！`,
+          personalityTraits: (options?.traits as string)
+            ? (options.traits as string).split(',').map(t => t.trim())
+            : ['自定义 / Custom']
+        }
+
+        if (personaManager.addCustomPersona(persona)) {
+          return `✅ 已创建自定义人设 / Created: **${description}** (${name})`
+        } else {
+          return `❌ 人设 "${name}" 已存在 / Persona already exists`
+        }
+      })
+
+    // 删除自定义人设命令
+    ctx.command('persona remove / 删除人设 <name:string>', '删除自定义人设 / Remove custom persona')
+      .action(({ session }, name: string) => {
+        if (!session?.userId) return '❌ 无法获取会话信息 / Failed to get session info'
+        if (!config.enablePersonas) {
+          return '❌ 人设功能未启用 / Persona feature not enabled'
+        }
+
+        if (!name) {
+          return '❌ 请指定要删除的人设名称 / Please specify persona name to remove'
+        }
+
+        if (personaManager.removeCustomPersona(name)) {
+          return `✅ 已删除自定义人设 / Removed: ${name}`
+        } else {
+          return `❌ 无法删除人设 "${name}" / Cannot remove persona (may not exist or is system persona)`
+        }
+      })
+
+    // 列出自定义人设命令
+    ctx.command('persona custom / 自定义人设', '查看自定义人设 / View custom personas')
+      .action(({ session }) => {
+        if (!session?.userId) return '❌ 无法获取会话信息 / Failed to get session info'
+        if (!config.enablePersonas) {
+          return '❌ 人设功能未启用 / Persona feature not enabled'
+        }
+
+        const customPersonas = personaManager.getCustomPersonas()
+        if (customPersonas.length === 0) {
+          return '❌ 没有自定义人设 / No custom personas\n\n💡 使用 / Use `persona create` 或 `创建人设` 创建新人设'
+        }
+
+        const list = customPersonas
+          .map(p => `• **${p.name}** - ${p.description}`)
+          .join('\n')
+
+        return `🎭 自定义人设 / Custom Personas (共 ${customPersonas.length} 个 / Total ${customPersonas.length}):\n\n${list}`
+      })
+  }
+}
