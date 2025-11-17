@@ -169,11 +169,8 @@ export class TranslateService {
    */
   async translate(params: TranslateParams): Promise<ApiResponse<string>> {
     try {
-      logger.info(`[翻译] 开始翻译`)
-      logger.info(`[翻译] 参数: text=${params.text}, targetLanguage=${params.targetLanguage}`)
-      
       if (!params.text || params.text.trim().length === 0) {
-        logger.error(`[翻译] 翻译文本为空`)
+        logger.error(`[翻译] 文本为空`)
         return {
           success: false,
           error: '请提供要翻译的文本'
@@ -200,9 +197,6 @@ export class TranslateService {
       const sourceLang = params.sourceLanguage?.toLowerCase() || 'auto'
       const targetLangName = SUPPORTED_LANGUAGES[targetLang as keyof typeof SUPPORTED_LANGUAGES]
 
-      logger.info(`[翻译] 翻译文本到 ${targetLangName}`)
-      logger.info(`[翻译] 调用 API: ${this.baseUrl}`)
-
       // 调用千问翻译 API (qwen-mt-flash)
       // 翻译 API 需要在请求体中直接指定 translation_options
       const response = await axios.post(this.baseUrl, {
@@ -224,20 +218,14 @@ export class TranslateService {
         }
       })
 
-      logger.info(`[翻译] API 响应状态: ${response.status}`)
-      logger.info(`[翻译] API 响应数据: ${JSON.stringify(response.data)}`)
-
       const translatedText = response.data?.choices?.[0]?.message?.content
       if (!translatedText) {
-        logger.error(`[翻译] 翻译失败，无法从响应中提取翻译结果`)
-        logger.error(`[翻译] 完整响应: ${JSON.stringify(response.data)}`)
+        logger.error(`[翻译] 无法提取翻译结果`)
         return {
           success: false,
           error: '翻译失败'
         }
       }
-
-      logger.info(`[翻译] 翻译成功: ${translatedText}`)
 
       return {
         success: true,
@@ -245,16 +233,13 @@ export class TranslateService {
         message: `已翻译为 ${targetLangName}`
       }
     } catch (error: any) {
-      logger.error(`[翻译] 翻译异常: ${formatError(error)}`)
+      logger.error(`[翻译] 异常: ${formatError(error)}`)
       
       // 处理 API 错误响应
       if (error.response?.data) {
         const errorData = error.response.data
         const errorCode = errorData.code
         const errorMessage = errorData.message
-        
-        logger.error(`[翻译] API 错误代码: ${errorCode}`)
-        logger.error(`[翻译] API 错误信息: ${errorMessage}`)
         
         // 根据错误代码返回友好的错误信息
         if (errorCode === '400-InvalidParameter') {

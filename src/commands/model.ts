@@ -83,8 +83,8 @@ export function registerModelCommands(
     .action(({ session }, name: string, apiKey: string, modelName?: string) => {
       logger.debug('添加模型命令被调用', { userId: session?.userId, name })
 
-      if (!session?.user?.authority || session.user.authority < 1) {
-        logger.warn('用户权限不足', { userId: session?.userId, authority: session.user?.authority })
+      if (!session?.user || session.user.authority < 1) {
+        logger.warn('用户权限不足', { userId: session?.userId, authority: session?.user?.authority })
         return '❌ 权限不足 / Permission denied'
       }
 
@@ -118,8 +118,8 @@ export function registerModelCommands(
     .action(({ session }, name: string) => {
       logger.debug('删除模型命令被调用', { userId: session?.userId, name })
 
-      if (!session?.user?.authority || session.user.authority < 1) {
-        logger.warn('用户权限不足', { userId: session?.userId, authority: session.user?.authority })
+      if (!session?.user || session.user.authority < 1) {
+        logger.warn('用户权限不足', { userId: session?.userId, authority: session?.user?.authority })
         return '❌ 权限不足 / Permission denied'
       }
 

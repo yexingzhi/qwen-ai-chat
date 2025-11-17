@@ -33,9 +33,9 @@ declare module 'koishi' {
 
 export interface Config {
   apiKey: string
-  model: string
+  model: 'qwen-turbo' | 'qwen-plus' | 'qwen-max' | 'qwen-long'
   baseURL: string
-  region: string
+  region: 'beijing' | 'singapore'
   temperature: number
   maxTokens: number
   enableTextToImage: boolean
@@ -43,6 +43,7 @@ export interface Config {
   enableTextToVideo: boolean
   enableTranslate: boolean
   personaVersion: 'simple' | 'complex'
+  adminUsers: string
 }
 
 export const Config: Schema<Config> = Schema.intersect([
@@ -97,9 +98,42 @@ export const Config: Schema<Config> = Schema.intersect([
       .default(true)
       .description('启用翻译功能 / Enable translation'),
   }).description('功能开关 / Feature Switches'),
+
+  Schema.object({
+    adminUsers: Schema.string()
+      .default('')
+      .description('管理员用户 ID（逗号分隔）/ Admin user IDs (comma-separated)'),
+  }).description('权限管理 / Permission Management'),
 ])
 
 export function apply(ctx: Context, config: Config) {
+  // 定义国际化资源
+  ctx.i18n.define('zh-CN', {
+    commands: {
+      chat: '你好',
+      ask: '请问',
+      'persona-list': '人设列表',
+      'persona-switch': '切换人设',
+      'persona-current': '当前人设',
+      'persona-info': '人设详情',
+      'persona.create': '创建人设',
+      'persona.remove': '删除人设',
+      'persona.custom': '自定义人设',
+      'context-clear': '清除对话',
+      'context-info': '上下文信息',
+      'context-stats': '对话统计',
+      image: '生成图片',
+      'image-sizes': '图片尺寸',
+      'edit-image': '编辑图片',
+      'edit-actions': '编辑操作',
+      video: '生成视频',
+      'video-durations': '视频时长',
+      translate: '翻译',
+      languages: '支持语言',
+      'qwen-region': '地域'
+    }
+  })
+
   logger.info('[插件] Qwen 插件启动')
   logger.info(`[插件] 配置: apiKey=${config.apiKey?.substring(0, 10)}..., model=${config.model}`)
   logger.info(`[插件] 功能启用: 文生图=${config.enableTextToImage}, 图片编辑=${config.enableImageEdit}, 文生视频=${config.enableTextToVideo}, 翻译=${config.enableTranslate}`)
@@ -108,6 +142,25 @@ export function apply(ctx: Context, config: Config) {
   if (!validateApiKey(config.apiKey)) {
     logger.error('无效的 API Key 格式')
     return
+  }
+
+  // 解析管理员用户列表
+  const adminUserIds = new Set<string>()
+  if (config.adminUsers) {
+    config.adminUsers.split(',').forEach(id => {
+      const trimmed = id.trim()
+      if (trimmed) {
+        adminUserIds.add(trimmed)
+      }
+    })
+    if (adminUserIds.size > 0) {
+      logger.info(`[权限] 管理员用户: ${Array.from(adminUserIds).join(', ')}`)
+    }
+  }
+
+  // 创建权限检查函数
+  const isAdmin = (userId?: string): boolean => {
+    return userId ? adminUserIds.has(userId) : false
   }
 
   // 初始化模型管理器
@@ -189,12 +242,26 @@ export function apply(ctx: Context, config: Config) {
   ctx.qwenAIChat = services
 
   // 注册 chat 命令
-  ctx.command('chat <message:text>', ctx.i18n.get('commands.chat.description'))
-    .option('persona', `-p <persona:string> ${ctx.i18n.get('commands.chat.options.persona')}`)
-    .option('reset', `-r ${ctx.i18n.get('commands.chat.options.reset')}`)
+  ctx.command('chat <message:text>', 'commands.chat.description')
+    .alias('你好')
+    .option('persona', `-p <persona:string> commands.chat.options.persona`)
+    .option('reset', `-r commands.chat.options.reset`)
+    .channelFields(['guildId'])
     .action(async ({ session, options }, message) => {
-      if (!session) {
+      if (!session?.userId) {
         return '❌ 无法获取会话信息'
+      }
+
+      // 群聊中使用中文别名"你好"需要 @ 机器人
+      if (session.guildId) {
+        // 检查是否是中文别名触发，且没有被 @
+        const content = session.content || ''
+        const isChineseCommand = content.startsWith('你好')
+        const isMentioned = content.includes('<at') || content.includes('@')
+        
+        if (isChineseCommand && !isMentioned) {
+          return ''
+        }
       }
 
       if (!message) {
@@ -203,8 +270,13 @@ export function apply(ctx: Context, config: Config) {
 
       // 处理重置选项
       if (options?.reset) {
+        // 权限检查：仅管理员可以清除对话历史
+        if (!isAdmin(session?.userId)) {
+          return '❌ 权限不足，仅管理员可以清除对话历史 / Permission denied, only admins can clear history'
+        }
         conversationManager.clearHistory(session.userId)
-        return '✅ 对话历史已重置'
+        logger.info(`[权限] 管理员 ${session?.userId} 清除了对话历史`)
+        return '✅ 对话历史已重置 / Conversation history cleared'
       }
 
       try {
@@ -281,12 +353,26 @@ export function apply(ctx: Context, config: Config) {
     })
 
   // 注册 ask 命令（别名）
-  ctx.command('ask <message:text>', ctx.i18n.get('commands.ask.description'))
-    .option('persona', `-p <persona:string> ${ctx.i18n.get('commands.ask.options.persona')}`)
-    .option('reset', `-r ${ctx.i18n.get('commands.ask.options.reset')}`)
+  ctx.command('ask <message:text>', 'commands.ask.description')
+    .alias('请问')
+    .option('persona', `-p <persona:string> commands.ask.options.persona`)
+    .option('reset', `-r commands.ask.options.reset`)
+    .channelFields(['guildId'])
     .action(async ({ session, options }, message) => {
-      if (!session) {
+      if (!session?.userId) {
         return '❌ 无法获取会话信息'
+      }
+
+      // 群聊中使用中文别名"请问"需要 @ 机器人
+      if (session.guildId) {
+        // 检查是否是中文别名触发，且没有被 @
+        const content = session.content || ''
+        const isChineseCommand = content.startsWith('请问')
+        const isMentioned = content.includes('<at') || content.includes('@')
+        
+        if (isChineseCommand && !isMentioned) {
+          return ''
+        }
       }
 
       if (!message) {
@@ -295,8 +381,13 @@ export function apply(ctx: Context, config: Config) {
 
       // 处理重置选项
       if (options?.reset) {
+        // 权限检查：仅管理员可以清除对话历史
+        if (!isAdmin(session?.userId)) {
+          return '❌ 权限不足，仅管理员可以清除对话历史 / Permission denied, only admins can clear history'
+        }
         conversationManager.clearHistory(session.userId)
-        return '✅ 对话历史已重置'
+        logger.info(`[权限] 管理员 ${session?.userId} 清除了对话历史`)
+        return '✅ 对话历史已重置 / Conversation history cleared'
       }
 
       try {
@@ -418,19 +509,26 @@ export function apply(ctx: Context, config: Config) {
     })
 
   // 注册地域切换命令
-  ctx.command('qwen-region <region:string>', '切换 API 地域')
+  ctx.command('qwen-region <region:string>', '切换 API 地域 / Switch API region')
+    .alias('地域')
     .action(({ session }, region) => {
+      // 权限检查
+      if (!isAdmin(session?.userId)) {
+        return '❌ 权限不足，仅管理员可以切换地域 / Permission denied, only admins can switch region'
+      }
+
       if (!region) {
-        return `❌ 请指定地域\n📍 支持的地域: beijing (北京), singapore (新加坡)`
+        return `❌ 请指定地域 / Please specify region\n📍 支持的地域 / Supported regions: beijing (北京), singapore (新加坡)`
       }
 
       const validRegions = ['beijing', 'singapore', 'intl']
       if (!validRegions.includes(region.toLowerCase())) {
-        return `❌ 不支持的地域: ${region}\n📍 支持的地域: beijing (北京), singapore (新加坡)`
+        return `❌ 不支持的地域 / Unsupported region: ${region}\n📍 支持的地域 / Supported regions: beijing (北京), singapore (新加坡)`
       }
 
-      const normalizedRegion = region.toLowerCase() === 'intl' ? 'singapore' : region.toLowerCase()
+      const normalizedRegion = (region.toLowerCase() === 'intl' ? 'singapore' : region.toLowerCase()) as 'beijing' | 'singapore'
       config.region = normalizedRegion
+      logger.info(`[权限] 管理员 ${session?.userId} 切换地域到 ${normalizedRegion}`)
 
       // 使用服务工厂重新初始化所有服务
       const updatedServices = createServices(
@@ -514,7 +612,8 @@ export function apply(ctx: Context, config: Config) {
   // ==================== 文生图功能 ====================
 
   // 注册文生图命令
-  ctx.command('image / 生成图片 <prompt:text>', '生成图像 / Generate image')
+  ctx.command('image <prompt:text>', '生成图像 / Generate image')
+    .alias('生成图片')
     .option('size', '-s <size:string> 图像尺寸 / Image size')
     .option('style', '-t <style:string> 图像风格 / Image style')
     .action(async ({ session, options }, prompt) => {
@@ -533,7 +632,7 @@ export function apply(ctx: Context, config: Config) {
           quality: 'standard'
         })
 
-        if (result.success) {
+        if (result.success && session) {
           // 直接发送图片
           await session.send(`<image url="${result.data}" />`)
           return ''
@@ -546,7 +645,8 @@ export function apply(ctx: Context, config: Config) {
     })
 
   // 注册图像尺寸列表命令
-  ctx.command('image-sizes / 图片尺寸', '查看支持的图像尺寸 / View supported image sizes')
+  ctx.command('image-sizes', '查看支持的图像尺寸 / View supported image sizes')
+    .alias('图片尺寸')
     .action(() => {
       return `📐 支持的图像尺寸:\n${textToImageService.formatSizesList()}`
     })
@@ -555,7 +655,8 @@ export function apply(ctx: Context, config: Config) {
 
   // 注册图片编辑命令
   logger.info('[插件] 注册图片编辑命令: edit-image')
-  ctx.command('edit-image / 编辑图片 <text:text>', '编辑图片 / Edit image')
+  ctx.command('edit-image <text:text>', '编辑图片 / Edit image')
+    .alias('编辑图片')
     .action(async ({ session }, text) => {
       logger.info(`[命令] 图片编辑命令被触发`)
       logger.info(`[命令] 原始输入: text=${text}`)
@@ -593,7 +694,7 @@ export function apply(ctx: Context, config: Config) {
           prompt
         })
 
-        if (result.success) {
+        if (result.success && session) {
           ctx.logger.info(`[命令] 图片编辑成功，发送图片: ${result.data}`)
           // 直接发送编辑后的图片
           await session.send(`<image url="${result.data}" />`)
@@ -609,7 +710,8 @@ export function apply(ctx: Context, config: Config) {
     })
 
   // 注册图片编辑操作列表命令
-  ctx.command('edit-actions / 编辑操作', '查看支持的图片编辑操作 / View supported editing actions')
+  ctx.command('edit-actions', '查看支持的图片编辑操作 / View supported editing actions')
+    .alias('编辑操作')
     .action(() => {
       return `🎨 支持的编辑操作:\n${imageEditService.formatActionsList()}`
     })
@@ -617,7 +719,8 @@ export function apply(ctx: Context, config: Config) {
   // ==================== 文生视频功能 ====================
 
   // 注册文生视频命令
-  ctx.command('video / 生成视频 <prompt:text>', '生成视频 / Generate video')
+  ctx.command('video <prompt:text>', '生成视频 / Generate video')
+    .alias('生成视频')
     .action(async ({ session }, prompt) => {
       if (!pluginConfig.enableTextToVideo) {
         return '❌ 文生视频功能未启用 / Text-to-video feature not enabled'
@@ -643,7 +746,7 @@ export function apply(ctx: Context, config: Config) {
           size
         })
 
-        if (result.success) {
+        if (result.success && session) {
           // 直接发送视频
           await session.send(`<video url="${result.data}" />`)
           return ''
@@ -656,7 +759,8 @@ export function apply(ctx: Context, config: Config) {
     })
 
   // 注册视频时长列表命令
-  ctx.command('video-durations / 视频时长', '查看支持的视频时长 / View supported video durations')
+  ctx.command('video-durations', '查看支持的视频时长 / View supported video durations')
+    .alias('视频时长')
     .action(() => {
       return `⏱️ 支持的视频时长:\n${textToVideoService.formatDurationsList()}`
     })
@@ -664,7 +768,8 @@ export function apply(ctx: Context, config: Config) {
   // ==================== 翻译功能 ====================
 
   // 注册翻译命令
-  ctx.command('translate / 翻译 <text:text>', '翻译文本 / Translate text')
+  ctx.command('translate <text:text>', '翻译文本 / Translate text')
+    .alias('翻译')
     .option('source', '-s <source:string> 源语言 / Source language')
     .action(async ({ session, options }, text) => {
       logger.info(`[命令] 翻译命令被触发`)
@@ -712,7 +817,8 @@ export function apply(ctx: Context, config: Config) {
     })
 
   // 注册语言列表命令
-  ctx.command('languages / 支持语言', '查看支持的语言 / View supported languages')
+  ctx.command('languages', '查看支持的语言 / View supported languages')
+    .alias('支持语言')
     .action(() => {
       return `🌍 支持的语言:\n${translateService.formatLanguagesList()}`
     })

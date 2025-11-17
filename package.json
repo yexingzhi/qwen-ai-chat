@@ -1,7 +1,7 @@
 {
   "name": "koishi-plugin-qwen-ai-chat",
-  "description": "Qwen AI Chat Plugin - 阿里云千问大模型对话插件，支持人设系统、对话上下文管理和多种AI功能",
-  "version": "1.0.3",
+  "description": "Qwen AI Chat Plugin - 阿里云千问大模型对话插件，支持人设系统、对话上下文管理、用户记忆系统、人设适配器和多种AI功能",
+  "version": "1.0.5",
   "author": "laojiu",
   "homepage": "https://github.com/yexingzhi/koishi-plugin-qwen-ai-chat",
   "repository": {
@@ -56,8 +56,8 @@
   },
   "koishi": {
     "description": {
-      "en": "Qwen AI Chat Plugin - Support for persona system, conversation context management, image generation, image editing, video generation, and translation",
-      "zh": "千问AI对话插件 - 支持人设系统、对话上下文管理、文生图、图片编辑、文生视频和翻译功能"
+      "en": "Qwen AI Chat Plugin - Support for persona system, conversation context management, user memory system, persona adapter, image generation, image editing, video generation, and translation",
+      "zh": "千问AI对话插件 - 支持人设系统、对话上下文管理、用户记忆系统、人设适配器、文生图、图片编辑、文生视频和翻译功能"
     },
     "service": {
       "required": [],

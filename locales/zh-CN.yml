@@ -1,5 +1,29 @@
 # 中文国际化文件 (Simplified Chinese)
 
+# 命令名称翻译
+commands.chat: 对话
+commands.ask: 问
+commands.persona-list: 人设列表
+commands.persona-switch: 切换人设
+commands.persona-current: 当前人设
+commands.persona-info: 人设详情
+commands.persona.create: 创建人设
+commands.persona.remove: 删除人设
+commands.persona.custom: 自定义人设
+commands.context-clear: 清除对话
+commands.context-info: 上下文信息
+commands.context-stats: 对话统计
+commands.image: 生成图片
+commands.image-sizes: 图片尺寸
+commands.edit-image: 编辑图片
+commands.edit-actions: 编辑操作
+commands.video: 生成视频
+commands.video-durations: 视频时长
+commands.translate: 翻译
+commands.languages: 支持语言
+commands.qwen-region: 地域
+
+# 命令描述和选项
 commands:
   chat:
     description: 与千问大模型对话

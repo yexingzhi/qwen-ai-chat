@@ -255,5 +255,15 @@ declare module 'koishi' {
       createdAt: number
       updatedAt: number
     }
+    'qwen_user_memory': {
+      id: number
+      userId: string
+      preferences: string
+      conversationStyle: 'casual' | 'professional' | 'creative'
+      topics: string
+      memoryFragments: string
+      createdAt: number
+      updatedAt: number
+    }
   }
 }

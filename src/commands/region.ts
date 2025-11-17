@@ -34,8 +34,8 @@ export function registerRegionCommands(
     .action(({ session }, regionInput: string) => {
       logger.debug('切换地域命令被调用', { userId: session?.userId, region: regionInput })
 
-      if (!session?.user?.authority || session.user.authority < 1) {
-        logger.warn('用户权限不足', { userId: session?.userId, authority: session.user?.authority })
+      if (!session?.user || session.user.authority < 1) {
+        logger.warn('用户权限不足', { userId: session?.userId, authority: session?.user?.authority })
         return '❌ 权限不足 / Permission denied'
       }
 

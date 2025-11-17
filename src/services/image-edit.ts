@@ -81,9 +81,6 @@ export class ImageEditService {
    */
   async editImage(params: ImageEditParams): Promise<ApiResponse<string>> {
     try {
-      logger.info(`[图片编辑] 开始编辑图片`)
-      logger.info(`[图片编辑] 参数: action=${params.action}, imageUrl=${params.imageUrl}, prompt=${params.prompt}`)
-      
       if (!params.imageUrl || !isUrl(params.imageUrl)) {
         logger.error(`[图片编辑] 图片 URL 无效: ${params.imageUrl}`)
         return {
@@ -109,14 +106,10 @@ export class ImageEditService {
         }
       }
 
-      logger.info(`[图片编辑] 编辑图片: ${action} - ${params.prompt}`)
-
       // 构建编辑提示词
       const editPrompt = this.buildEditPrompt(action as keyof typeof EDIT_ACTIONS, params.prompt)
-      logger.info(`[图片编辑] 编辑提示词: ${editPrompt}`)
 
       // 调用阿里云千问图片编辑 API
-      logger.info(`[图片编辑] 调用 API: ${this.baseUrl}`)
       const response = await axios.post(this.baseUrl, {
         model: 'qwen-image-edit-plus',
         input: {
@@ -147,23 +140,16 @@ export class ImageEditService {
         }
       })
 
-      logger.info(`[图片编辑] API 响应状态: ${response.status}`)
-      logger.info(`[图片编辑] API 响应数据: ${JSON.stringify(response.data)}`)
-      
       // 从 choices 中提取图像 URL
       let editedImageUrl = response.data?.output?.choices?.[0]?.message?.content?.[0]?.image
-      logger.info(`[图片编辑] 提取的图像 URL: ${editedImageUrl}`)
       
       if (!editedImageUrl) {
-        logger.error(`[图片编辑] 图片编辑失败，无法从响应中提取图像 URL`)
-        logger.error(`[图片编辑] 完整响应: ${JSON.stringify(response.data)}`)
+        logger.error(`[图片编辑] 无法从响应中提取图像 URL`)
         return {
           success: false,
           error: '图片编辑失败'
         }
       }
-
-      logger.info(`[图片编辑] 图片编辑成功: ${editedImageUrl}`)
 
       return {
         success: true,
@@ -171,20 +157,13 @@ export class ImageEditService {
         message: '图片编辑成功'
       }
     } catch (error: any) {
-      logger.error(`[图片编辑] 图片编辑异常: ${formatError(error)}`)
-      if (error instanceof Error) {
-        logger.error(`[图片编辑] 错误详情: ${error.message}`)
-        logger.error(`[图片编辑] 错误堆栈: ${error.stack}`)
-      }
+      logger.error(`[图片编辑] 异常: ${formatError(error)}`)
       
       // 处理 API 错误响应
       if (error.response?.data) {
         const errorData = error.response.data
         const errorCode = errorData.code
         const errorMessage = errorData.message
-        
-        logger.error(`[图片编辑] API 错误代码: ${errorCode}`)
-        logger.error(`[图片编辑] API 错误信息: ${errorMessage}`)
         
         // 根据错误代码返回友好的错误信息
         if (errorCode === 'DataInspectionFailed') {

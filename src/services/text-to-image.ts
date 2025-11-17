@@ -90,8 +90,6 @@ export class TextToImageService {
         }
       }
 
-      logger.info(`生成图像: ${params.prompt}`)
-
       // 调用阿里云千问文生图 API
       const response = await axios.post(this.baseUrl, {
         model: 'qwen-image-plus',
@@ -120,20 +118,16 @@ export class TextToImageService {
         }
       })
 
-      logger.info(`API 响应: ${JSON.stringify(response.data)}`)
-      
       // 从 choices 中提取图像 URL
       let imageUrl = response.data?.output?.choices?.[0]?.message?.content?.[0]?.image
       
       if (!imageUrl) {
-        logger.error(`图像生成失败，响应: ${JSON.stringify(response.data)}`)
+        logger.error(`[文生图] 生成失败，无法提取图像 URL`)
         return {
           success: false,
           error: '生成图像失败'
         }
       }
-
-      logger.info(`图像生成成功: ${imageUrl}`)
 
       return {
         success: true,
@@ -141,16 +135,13 @@ export class TextToImageService {
         message: '图像生成成功'
       }
     } catch (error: any) {
-      logger.error(`文生图异常: ${formatError(error)}`)
+      logger.error(`[文生图] 异常: ${formatError(error)}`)
       
       // 处理 API 错误响应
       if (error.response?.data) {
         const errorData = error.response.data
         const errorCode = errorData.code
         const errorMessage = errorData.message
-        
-        logger.error(`API 错误代码: ${errorCode}`)
-        logger.error(`API 错误信息: ${errorMessage}`)
         
         // 根据错误代码返回友好的错误信息
         if (errorCode === 'DataInspectionFailed') {

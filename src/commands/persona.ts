@@ -28,7 +28,8 @@ export function registerPersonaCommands(
   logger.info('注册人设管理命令')
 
   // 人设列表命令
-  ctx.command('persona-list / 人设列表', '查看所有人设 / View all personas')
+  ctx.command('persona-list', '查看所有人设 / View all personas')
+    .alias('人设列表')
     .action(({ session }) => {
       logger.debug('人设列表命令被调用', { userId: session?.userId })
 
@@ -56,7 +57,8 @@ export function registerPersonaCommands(
     })
 
   // 切换人设命令
-  ctx.command('persona-switch / 切换人设 <name:string>', '切换人设 / Switch persona')
+  ctx.command('persona-switch <name:string>', '切换人设 / Switch persona')
+    .alias('切换人设')
     .action(({ session }, name) => {
       logger.debug('切换人设命令被调用', { userId: session?.userId, name })
 
@@ -90,7 +92,8 @@ export function registerPersonaCommands(
     })
 
   // 当前人设命令
-  ctx.command('persona-current / 当前人设', '查看当前人设 / View current persona')
+  ctx.command('persona-current', '查看当前人设 / View current persona')
+    .alias('当前人设')
     .action(({ session }) => {
       if (!session?.userId) return '❌ 无法获取会话信息 / Failed to get session info'
       if (!config.enablePersonas) {
@@ -109,7 +112,8 @@ export function registerPersonaCommands(
     })
 
   // 人设详情命令
-  ctx.command('persona-info / 人设详情 <name:string>', '查看人设详情 / View persona details')
+  ctx.command('persona-info <name:string>', '查看人设详情 / View persona details')
+    .alias('人设详情')
     .action(({ session }, name) => {
       if (!session?.userId) return '❌ 无法获取会话信息 / Failed to get session info'
       if (!config.enablePersonas) {
@@ -150,7 +154,8 @@ ${persona.systemPrompt}
     logger.info('注册自定义人设命令')
 
     // 创建自定义人设命令
-    ctx.command('persona create / 创建人设 <name:string> <description:string>', '创建自定义人设 / Create custom persona')
+    ctx.command('persona create <name:string> <description:string>', '创建自定义人设 / Create custom persona')
+      .alias('创建人设')
       .userFields(['authority'])
       .option('prompt', '-p <prompt:text> 系统提示词 / System prompt')
       .option('temperature', '-t <temperature:number> 创意度 / Temperature (0-2)', { fallback: 0.7 })
@@ -166,7 +171,7 @@ ${persona.systemPrompt}
         }
 
         // 权限检查：需要至少 1 级权限
-        if (session.user?.authority < 1) {
+        if (!session.user || session.user.authority < 1) {
           logger.warn('用户权限不足', { userId: session.userId, authority: session.user?.authority })
           return '❌ 权限不足，需要至少 1 级权限 / Permission denied, require authority level 1 or higher'
         }
@@ -188,7 +193,7 @@ ${persona.systemPrompt}
           maxTokens,
           greeting: (options?.greeting as string) || `你好，我是${description}！`,
           personalityTraits: (options?.traits as string)
-            ? (options.traits as string).split(',').map(t => t.trim())
+            ? (options?.traits as string).split(',').map(t => t.trim())
             : ['自定义 / Custom']
         }
 
@@ -202,7 +207,8 @@ ${persona.systemPrompt}
       })
 
     // 删除自定义人设命令
-    ctx.command('persona remove / 删除人设 <name:string>', '删除自定义人设 / Remove custom persona')
+    ctx.command('persona remove <name:string>', '删除自定义人设 / Remove custom persona')
+      .alias('删除人设')
       .userFields(['authority'])
       .action(({ session }, name: string) => {
         logger.debug('删除人设命令被调用', { userId: session?.userId, name })
@@ -213,7 +219,7 @@ ${persona.systemPrompt}
         }
 
         // 权限检查：需要至少 1 级权限
-        if (session.user?.authority < 1) {
+        if (!session.user || session.user.authority < 1) {
           logger.warn('用户权限不足', { userId: session.userId, authority: session.user?.authority })
           return '❌ 权限不足，需要至少 1 级权限 / Permission denied, require authority level 1 or higher'
         }
@@ -233,7 +239,8 @@ ${persona.systemPrompt}
       })
 
     // 列出自定义人设命令
-    ctx.command('persona custom / 自定义人设', '查看自定义人设 / View custom personas')
+    ctx.command('persona custom', '查看自定义人设 / View custom personas')
+      .alias('自定义人设')
       .action(({ session }) => {
         if (!session?.userId) return '❌ 无法获取会话信息 / Failed to get session info'
         if (!config.enablePersonas) {

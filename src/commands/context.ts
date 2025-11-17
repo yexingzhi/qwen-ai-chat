@@ -28,7 +28,8 @@ export function registerContextCommands(
   logger.info('注册对话上下文命令')
 
   // 清除对话历史命令
-  ctx.command('context-clear / 清除对话', '清除对话历史 / Clear conversation history')
+  ctx.command('context-clear', '清除对话历史 / Clear conversation history')
+    .alias('清除对话')
     .userFields(['authority'])
     .action(({ session }) => {
       logger.debug('清除对话历史命令被调用', { userId: session?.userId })
@@ -40,7 +41,7 @@ export function registerContextCommands(
 
       // 权限检查：任何用户都可以清除自己的对话历史
       // 但如果要清除他人的历史，需要至少 1 级权限
-      if (session.user?.authority < 1) {
+      if (!session.user || session.user.authority < 1) {
         logger.warn('用户权限不足', { userId: session.userId, authority: session.user?.authority })
         return '❌ 权限不足 / Permission denied'
       }
@@ -53,7 +54,8 @@ export function registerContextCommands(
     })
 
   // 上下文信息命令
-  ctx.command('context-info / 上下文信息', '查看上下文信息 / View context information')
+  ctx.command('context-info', '查看上下文信息 / View context information')
+    .alias('上下文信息')
     .action(({ session }) => {
       logger.debug('上下文信息命令被调用', { userId: session?.userId })
 
@@ -77,7 +79,8 @@ export function registerContextCommands(
     })
 
   // 对话统计命令
-  ctx.command('context-stats / 对话统计', '查看对话统计 / View conversation statistics')
+  ctx.command('context-stats', '查看对话统计 / View conversation statistics')
+    .alias('对话统计')
     .action(({ session }) => {
       logger.debug('对话统计命令被调用', { userId: session?.userId })
 

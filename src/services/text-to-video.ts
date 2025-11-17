@@ -100,8 +100,6 @@ export class TextToVideoService {
 
       const durationStr = String(duration) as keyof typeof VIDEO_DURATIONS
 
-      logger.info(`生成视频: ${params.prompt} (${duration}s)`)
-
       // 步骤1：创建任务获取任务ID
       // 万相2.5 API 要求必须使用异步模式（X-DashScope-Async: enable）
       // 验证分辨率
@@ -151,8 +149,6 @@ export class TextToVideoService {
         }
       }
 
-      logger.info(`视频任务已创建: ${taskId}`)
-
       // 步骤2：轮询查询结果
       // 万相2.5文生视频通常需要1-5分钟，建议轮询间隔15秒
       let videoUrl = ''
@@ -170,11 +166,9 @@ export class TextToVideoService {
         })
 
         const status = queryResponse.data?.output?.task_status
-        logger.info(`[文生视频] 任务状态: ${status} (第 ${attempts + 1} 次查询)`)
         
         if (status === 'SUCCEEDED') {
           videoUrl = queryResponse.data?.output?.video_url
-          logger.info(`[文生视频] 任务成功，视频URL: ${videoUrl}`)
           break
         } else if (status === 'FAILED') {
           const errorCode = queryResponse.data?.output?.code
@@ -206,24 +200,19 @@ export class TextToVideoService {
         }
       }
 
-      logger.info(`视频生成成功: ${videoUrl}`)
-
       return {
         success: true,
         data: videoUrl,
         message: `视频生成成功 (${duration}秒)`
       }
     } catch (error: any) {
-      logger.error('文生视频失败', error)
+      logger.error(`[文生视频] 异常: ${formatError(error)}`)
       
       // 处理 API 错误响应
       if (error.response?.data) {
         const errorData = error.response.data
         const errorCode = errorData.code
         const errorMessage = errorData.message
-        
-        logger.error(`[文生视频] API 错误代码: ${errorCode}`)
-        logger.error(`[文生视频] API 错误信息: ${errorMessage}`)
         
         // 根据错误代码返回友好的错误信息
         if (errorCode === '400-InvalidParameter') {

@@ -80,7 +80,7 @@ export async function retry<T>(
  * 验证 API Key
  */
 export function validateApiKey(apiKey: string): boolean {
-  return apiKey && apiKey.startsWith('sk-') && apiKey.length > 10
+  return !!(apiKey && apiKey.startsWith('sk-') && apiKey.length > 10)
 }
 
 /**
